@@ -1,0 +1,159 @@
+---
+title: "Data Skills Assignment"
+author: "Student ID: 2597588"
+date: 03/03/2025
+format:
+  html: 
+    embed-resources: true
+---
+Libraries
+```{r}
+library(here)
+library(tidyverse)
+library(ggplot2)
+```
+
+Loading the data
+```{r}
+#The working directory may vary among different users.
+accent_bc <- read_csv("datasets/uk_accents_bishop_coupland.csv")
+accent_bc
+```
+
+#Visulization No. 1 (Coupland and Bishop 2004)
+
+Calculating the mean values
+```{r}
+#The two mean values here will be used to indicate a specific point on the plot.
+avg_x <- mean(accent_bc$Attractiveness, na.rm = TRUE)
+avg_y <- mean(accent_bc$Prestige, na.rm = TRUE)
+avg_x #3.891471
+avg_y #3.466471
+```
+
+Scatter Plot
+```{r}
+ggplot(
+  data = accent_bc, 
+  mapping = aes(x = Attractiveness, y = Prestige)
+) +
+  geom_point(color = "pink", size = 1.8) +
+  geom_text(aes(label = Label), vjust = -1.35, size = 1.2) +
+  geom_point(data = NULL, x = avg_x, y = avg_y, color = "blue", size = 2.5, shape = 17) + 
+  geom_text(x = avg_x, y = avg_y, label = "Average", vjust = 2, color = "blue", size = 1.3) + 
+  geom_segment(data = NULL, x = avg_x, xend = avg_x, y = 2, yend = avg_y, 
+               linetype = "dashed", color = "purple", linewidth = 0.2) + #Vertical Line
+  geom_hline(yintercept = avg_y, linetype = "dashed", color = "purple", linewidth = 0.2) + #Horizontal Line
+  theme_classic() +
+  geom_smooth(method = "lm", se = FALSE, color = "grey", alpha = 0.5, linewidth = 0.6) +
+  labs(x = "Attractiveness", y = "Prestige", subtitle = "UK Accents Coupland and Bishop 2004") +
+  ggtitle("The Correlation Between Attractiveness and Prestige")
+```
+
+
+##Visulization No. 2 (Coupland and Bishop 2004)
+
+Non-native Accents Data Frame
+```{r}
+non_native_bc <- data.frame (
+  Region = c("Afro-Caribbean", "Asian/Indian", "French", "German", "Spanish"),
+  Attractiveness = c(3.72, 3.21, 4.09, 3.2, 3.88),
+  Prestige = c(2.9, 2.74, 3.74, 3.21, 3.29)
+)
+non_native_bc
+accent_bc <- accent_bc |> 
+  mutate(Accent_Type = ifelse(Label %in% non_native_bc$Region, "Non-Native", "Native")) |> 
+  mutate(Accent_Type = as.factor(Accent_Type))
+accent_bc
+```
+
+Bar chart
+```{r}
+ggplot(
+  data = accent_bc, 
+  mapping = aes(x = reorder(Label, Prestige, decreasing = TRUE), y = Prestige, fill = Accent_Type)
+) +
+  geom_text(aes(label = round(Prestige, 3)), hjust = -0.1, size = 2.0) +
+  geom_col() +
+  coord_flip() +
+  theme_classic() +
+  labs(x = "Accent", y = "Prestige", title = "Prestige Ratings by Accent",
+       subtitle = "UK Accent Coupland and Bishop 2004")
+```
+
+
+###Visulization No. 3 (Sharma et al 2019 & Coupland and Bishop 2004)
+Loading Sharma et al 2019
+```{r}
+accent_sha <- read_csv("datasets/uk_accents_sharma_et_al.csv")
+accent_sha
+```
+
+Non-native Accents Bishop
+```{r}
+non_native_bc <- data.frame (
+  Region = c("Afro-Caribbean", "Asian/Indian", "French", "German", "Spanish"),
+  Attractiveness = c(3.72, 3.21, 4.09, 3.2, 3.88),
+  Prestige = c(2.9, 2.74, 3.74, 3.21, 3.29)
+)
+non_native_bc
+accent_bc <- accent_bc |> 
+  mutate(Accent_Type = ifelse(Label %in% non_native_bc$Region, "Non-Native", "Native")) |> 
+  mutate(Accent_Type = as.factor(Accent_Type))
+accent_bc
+```
+
+Non-native Accents Sharma
+```{r}
+non_native_sha <- data.frame(
+  Region = c("Afro-Caribbean", "Asian/Indian","Chinese", "French", "German", "MLE", "Spanish"),
+  Attractiveness = c(4.02, 3.54, 3.5, 4.57, 3.77, 3.89, 4.42),
+  Prestige = c(3.52, 3.38, 3.56, 4.56, 3.88, 3.81, 4.09)
+)
+non_native_sha
+
+accent_sha <- accent_sha |> 
+  mutate(Accent_Type = ifelse(Label %in% non_native_sha$Region, "Non-Native", "Native")) |> 
+  mutate(Accent_Type = as.factor(Accent_Type))
+accent_sha
+```
+
+Mutual Non-native Accents
+```{r}
+mutual_non_native_accent <- data.frame (
+  Region = c("Afro-Caribbean", "Asian/Indian", "French", "German", "Spanish"),
+  Attrac_SHA = c(4.02, 3.54, 4.57, 3.77, 4.42),
+  Year_SHA = c(2019, 2019, 2019, 2019, 2019),
+  Attrac_BC = c(3.72, 3.21, 4.09, 3.2, 3.88),
+  Year_BC = c(2004, 2004, 2004, 2004, 2004)
+)
+```
+
+Combined Long Type Data
+```{r}
+mutual_long <- mutual_non_native_accent |> 
+  pivot_longer(cols = c(Attrac_SHA, Attrac_BC), 
+               names_to = "Attrac_Type", 
+               values_to = "Attractiveness") |> 
+  mutate(Year = ifelse(Attrac_Type == "Attrac_SHA", 2019, 2004))
+mutual_long
+```
+
+Slope Graph
+```{r}
+ggplot(data = mutual_long,
+       mapping = aes(x = Year, y = Attractiveness, group = Region, color = Region)) +
+  geom_line(size = 0.6) +
+  geom_point(size = 1.5) +
+  geom_text(aes(label = round(Attractiveness, 2)), vjust = -0.8, size = 2.5) +
+  geom_text(data = mutual_long |> filter(Year == 2019), 
+            aes(label = Region), vjust = 1.5, hjust = 2.0, size = 2.5) +
+  theme_classic() +
+  labs(title = "Attractiveness of Non-native UK Accents (2004 vs. 2019)",
+       subtitle = "Mutual Data from Bishop/Coupland & Sharma et al.",
+       x = "Year", y = "Attractivenes") +
+  scale_x_continuous(breaks = c(2004, 2019)) +
+  theme(legend.position = "none")
+```
+
+
